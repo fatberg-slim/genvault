@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -53,18 +54,35 @@ def _empty() -> dict:
 # ---- ffprobe -----------------------------------------------------------------
 
 
+CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
+
+
+def ffprobe_json(path: Path, timeout: int = 60) -> dict:
+    """ffprobe -show_format -show_streams as a dict. Raises RuntimeError with
+    ffprobe's own message on failure.
+
+    The output is read as BYTES and decoded as UTF-8: with text=True Python
+    decodes with the Windows ANSI codepage (cp1252), and a single emoji or
+    accented letter in an embedded ComfyUI prompt made that decode fail in a
+    background thread — silently, leaving an empty result (no prompt, no
+    width/height/duration)."""
+    out = subprocess.run(
+        [config.FFPROBE, "-v", "error", "-print_format", "json",
+         "-show_format", "-show_streams", str(path)],
+        capture_output=True, timeout=timeout, creationflags=CREATE_NO_WINDOW,
+    )
+    if out.returncode != 0 or not out.stdout:
+        msg = out.stderr.decode("utf-8", "replace").strip()[-300:]
+        raise RuntimeError(f"ffprobe could not read {Path(path).name}: {msg or 'no output'}")
+    return json.loads(out.stdout.decode("utf-8", "replace"))
+
+
 def _ffprobe_json(path: Path) -> dict:
+    """Best-effort variant for metadata parsing: {} when ffprobe fails."""
     try:
-        out = subprocess.run(
-            [config.FFPROBE, "-v", "quiet", "-print_format", "json",
-             "-show_format", "-show_streams", str(path)],
-            capture_output=True, text=True, timeout=60,
-        )
-        if out.returncode == 0 and out.stdout:
-            return json.loads(out.stdout)
+        return ffprobe_json(path)
     except Exception:
-        pass
-    return {}
+        return {}
 
 
 # ---- ComfyUI graph -----------------------------------------------------------

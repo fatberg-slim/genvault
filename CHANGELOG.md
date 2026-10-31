@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.4.2 — 2026-10-31
+
+- **Fix: "Preview failed: unsupported operand type(s) for \*: 'NoneType' and
+  'float'"** in the release module, and the same failure when rendering. It
+  happened for clips whose embedded ComfyUI prompt contains certain special
+  characters (e.g. "Á", many emoji, some CJK characters): genvault read
+  ffprobe's output with the Windows codepage instead of UTF-8, the decoding
+  failed silently and the clip appeared to have no size, length or audio.
+  This bug existed in all earlier versions.
+- **Fix: prompts with such characters are now read at import.** The same
+  problem made genvault skip the complete metadata (prompt, LoRAs, model,
+  size, length) of these videos. Files imported before this version stay as
+  they are; their fields can be filled in by hand.
+- ffprobe errors are now reported with ffprobe's own message instead of being
+  silently ignored; the release module falls back to the size stored at import.
+
 ## 2.4.1 — 2026-10-31
 
 - **Fix: batch files use Windows line endings again.** `setup.bat`,

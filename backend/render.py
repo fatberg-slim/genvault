@@ -22,7 +22,7 @@ import uuid
 from collections import deque
 from pathlib import Path
 
-from . import config, db, library
+from . import config, db, library, parser
 
 WATERMARK_DIR = config.LIBRARY_ROOT / ".config"
 WATERMARK = WATERMARK_DIR / "watermark.png"
@@ -43,11 +43,10 @@ _nvenc: bool | None = None
 
 
 def _probe(path: Path) -> dict:
-    out = subprocess.run(
-        [config.FFPROBE, "-v", "quiet", "-print_format", "json",
-         "-show_format", "-show_streams", str(path)],
-        capture_output=True, text=True, timeout=60, creationflags=CREATE_NO_WINDOW)
-    data = json.loads(out.stdout or "{}")
+    try:
+        data = parser.ffprobe_json(path)
+    except RuntimeError as e:
+        raise ValueError(str(e))
     v = next((s for s in data.get("streams", []) if s.get("codec_type") == "video"), {})
     a = next((s for s in data.get("streams", []) if s.get("codec_type") == "audio"), None)
     num, _, den = str(v.get("r_frame_rate") or "0/1").partition("/")
@@ -77,6 +76,13 @@ def check_clips(asset_ids: list[int]) -> dict:
         if not p.exists():
             raise ValueError(f"file missing for asset {aid}: {p}")
         info = _probe(p)
+        meta = asset.get("meta") or {}
+        for key in ("width", "height", "duration"):     # fall back to import-time values
+            if not info.get(key) and meta.get(key):
+                info[key] = meta[key]
+        if not (info.get("width") and info.get("height")):
+            raise ValueError(f'could not read the video size of "{asset["original_name"]}" '
+                             "(is it a valid video file?)")
         info.update(id=asset["id"], name=asset["original_name"], path=str(p))
         clips.append(info)
     if not clips:

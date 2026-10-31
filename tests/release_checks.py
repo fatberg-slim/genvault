@@ -163,6 +163,46 @@ if j.get("status") == "done":
     check("first kept frame is source frame 50", max(first, key=first.get) == 50, first)
     check("last kept frame is source frame 228", max(last, key=last.get) == 228, last)
 
+# 5c) non-ASCII prompt in the embedded workflow (emoji, CJK, accents): ffprobe's
+#     output used to be decoded as cp1252 -> silently empty probe -> no prompt at
+#     import and "Preview failed: unsupported operand ... 'NoneType'" (2.4.1 bug)
+uni_prompt = "neon city \U0001f303✨ 夜の街 — caf\xe9 \xc1"
+uni = src / "unicode clip.mp4"
+subprocess.run(["ffmpeg", "-hide_banner", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=640x360:r=24:d=4",
+                "-metadata", "comment=" + json.dumps({"6": {"class_type": "CLIPTextEncode", "_meta": {"title": "Positive"},
+                                                            "inputs": {"text": uni_prompt}}}, ensure_ascii=False),
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", str(uni)], check=True)
+shutil.copy2(uni, LIB / "drop" / uni.name)
+ua = None
+for _ in range(30):
+    ua = next((a for a in req("GET", "/api/assets?status=inbox")[1]["assets"] if a["original_name"] == uni.name), None)
+    if ua:
+        break
+    time.sleep(1)
+check("unicode clip imported", ua is not None)
+if ua:
+    check("unicode prompt read exactly at import", ua["meta"].get("positive_prompt") == uni_prompt, ascii(ua["meta"].get("positive_prompt")))
+    check("unicode clip has size/duration", ua["meta"].get("width") == 640 and abs((ua["meta"].get("duration") or 0) - 4) < 0.2, ua["meta"])
+    # upload a watermark logo, then the exact call that failed for the user
+    import http.client, io
+    from PIL import Image
+    buf = io.BytesIO(); Image.new("RGBA", (200, 60), (255, 255, 255, 200)).save(buf, "PNG")
+    boundary = "gvtestboundary"
+    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"logo.png\"\r\n"
+            "Content-Type: image/png\r\n\r\n").encode() + buf.getvalue() + f"\r\n--{boundary}--\r\n".encode()
+    c = http.client.HTTPConnection("127.0.0.1", int(os.environ.get("GV_TEST_PORT", "8099")), timeout=30)
+    c.request("POST", "/api/render/watermark", body=body, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+    wr = c.getresponse(); wr.read(); c.close()
+    check("watermark logo uploaded", wr.status == 200, wr.status)
+    wmp = {"enabled": True, "position": "br", "size": 15, "size_unit": "%", "opacity": 80,
+           "offset_x": 3, "offset_y": 3, "offset_unit": "%"}
+    st, raw, _ = req("POST", "/api/render/preview", {"clip_id": ua["id"], "watermark": wmp, "trim_start": 0})
+    check("watermark preview works for the unicode clip", st == 200 and isinstance(raw, bytes) and raw[:2] == b"\xff\xd8",
+          (st, raw if not isinstance(raw, bytes) else len(raw)))
+    st, body2, jobs = render({"clip_ids": [ua["id"]], "mode": "each", "watermark": wmp, "output": folder})
+    j = jobs[0] if jobs else {}
+    check("render with watermark works for the unicode clip", st == 200 and j.get("status") == "done", (st, body2, j.get("error")))
+
 # 6) validation
 st, body, _ = req("POST", "/api/render/jobs", {"clip_ids": [s1], "mode": "each", "trims": [[6, 6]], "output": folder})
 check("trim longer than clip -> 400", st == 400 and "leaves nothing" in body.get("detail", ""), body)
