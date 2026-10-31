@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.4.1 — 2026-10-31
 
 - **Fix: batch files use Windows line endings again.** `setup.bat`,
   `update.bat` and `genvault-tray.bat` had Unix (LF) line endings, which

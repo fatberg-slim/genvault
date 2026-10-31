@@ -16,7 +16,7 @@ PROJECT_DIR = APP_DIR.parent                   # app root (program folder)
 CONFIG_FILE = Path(os.environ.get("GENVAULT_CONFIG", str(PROJECT_DIR / "config.json")))
 
 # App version. Bump on every release and add a CHANGELOG.md entry.
-APP_VERSION = "2.4.0"
+APP_VERSION = "2.4.1"
 
 DEFAULTS = {
     "library_root": str(Path.home() / "genvault"),
