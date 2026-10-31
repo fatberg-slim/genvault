@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>genvault</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html { color-scheme: dark; }
+  body { background: #09090b; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  .gv-clamp2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .gv-clamp3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  #gv-drawer { transition: transform .18s ease-out; }
+  .gv-star { cursor: pointer; user-select: none; }
+  .gv-card:focus { outline: 2px solid #6366f1; outline-offset: 1px; }
+  /* privacy mode: blur every media preview while body has .gv-blur */
+  body.gv-blur .gv-thumb img, body.gv-blur .gv-thumb video,
+  body.gv-blur #gv-drawer img, body.gv-blur #gv-drawer video {
+    filter: blur(18px); transform: scale(1.1);
+  }
+  /* rename pencil next to sidebar facets: only visible on hover/focus */
+  .gv-facet-edit { opacity: 0; }
+  .gv-facet-row:hover .gv-facet-edit, .gv-facet-edit:focus { opacity: 1; }
+  input, textarea, select { outline: none; }
+  input:focus, textarea:focus, select:focus { border-color: #6366f1 !important; }
+</style>
+</head>
+<body class="text-zinc-200 min-h-screen">
+  <div id="app"></div>
+  <div id="gv-toasts" class="fixed bottom-4 right-4 z-[70] flex flex-col gap-2 items-end"></div>
+  <div id="gv-drop-overlay" class="hidden fixed inset-0 z-[60] bg-indigo-950/80 backdrop-blur-sm items-center justify-center pointer-events-none">
+    <div class="border-4 border-dashed border-indigo-400 rounded-3xl px-16 py-12 text-2xl font-semibold text-indigo-200">
+      Drop files → Inbox
+    </div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

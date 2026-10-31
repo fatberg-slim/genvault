@@ -1,0 +1,33 @@
+# Local settings — contains your own library path and port.
+# The template for new installs is config.example.json.
+config.json
+
+# Python environment and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Runtime output
+logs/
+
+# Build / release artifacts (release zips are attached to GitHub releases or
+# uploaded to Civitai, not committed)
+*.zip
+
+# A library accidentally placed inside the program folder
+genvault.db
+genvault.db-*
+.sidecars/
+.derivatives/
+.trash/
+_inbox/
+drop/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
+.DS_Store

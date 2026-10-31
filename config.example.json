@@ -1,0 +1,8 @@
+{
+  "library_root": "C:/Users/you/genvault",
+  "port": 8077,
+  "platforms": ["X", "Civitai", "Reddit"],
+  "kinds": ["clip", "image", "sound", "release", "pre-release", "recipe"],
+  "ffmpeg": "",
+  "ffprobe": ""
+}
